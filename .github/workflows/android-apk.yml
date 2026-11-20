@@ -46,7 +46,14 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon 2>&1 | tee ../build.log; exit ${PIPESTATUS[0]}
+        run: |
+          for i in 1 2 3; do
+            ./gradlew assembleDebug --no-daemon 2>&1 | tee ../build.log
+            rc=${PIPESTATUS[0]}
+            [ "$rc" = "0" ] && exit 0
+            echo "attempt $i failed ($rc), retrying"; sleep 15
+          done
+          exit 1
         shell: bash
 
       - name: Report errors
