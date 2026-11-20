@@ -59,6 +59,7 @@ class StreamActivity : AppCompatActivity()
 
 	private lateinit var dubPrefs: DubPreferences
 	private var dubController: DubController? = null
+	private var editingRegion = false
 
 	override fun onCreate(savedInstanceState: Bundle?)
 	{
@@ -133,6 +134,8 @@ class StreamActivity : AppCompatActivity()
 			showOverlay()
 		}
 		binding.dubButton.setOnClickListener { setDubEnabled(!dubPrefs.enabled) }
+		binding.dubRegionButton.setOnClickListener { setRegionEditing(!editingRegion) }
+		binding.dubRegionView.onRegionChanged = { dubPrefs.saveRegion(it) }
 		updateDubButton()
 
 		if(Preferences(this).rumbleEnabled)
@@ -181,6 +184,13 @@ class StreamActivity : AppCompatActivity()
 	override fun onPause()
 	{
 		super.onPause()
+		if(editingRegion)
+		{
+			editingRegion = false
+			binding.dubRegionView.editable = false
+			binding.dubRegionButton.setText(R.string.dub_region_edit)
+			binding.dubRegionButton.setBackgroundResource(R.drawable.dub_button_region_bg)
+		}
 		stopDub()
 		viewModel.session.pause()
 	}
@@ -204,6 +214,34 @@ class StreamActivity : AppCompatActivity()
 	private fun updateDubButton()
 	{
 		binding.dubButton.setText(if(dubPrefs.enabled) R.string.dub_button_on else R.string.dub_button_off)
+		binding.dubButton.setBackgroundResource(if(dubPrefs.enabled) R.drawable.dub_button_on_bg else R.drawable.dub_button_off_bg)
+	}
+
+	/** Modo "marcar legenda": mostra o retângulo sobre o vídeo para o usuário arrastar e ajustar. */
+	private fun setRegionEditing(on: Boolean)
+	{
+		editingRegion = on
+		if(on)
+		{
+			stopDub()
+			binding.dubRegionView.target = binding.surfaceView
+			binding.dubRegionView.region = dubPrefs.region
+			binding.dubRegionView.editable = true
+			binding.dubRegionView.isVisible = true
+			binding.dubStatusText.setText(R.string.dub_region_hint)
+			binding.dubStatusText.isVisible = true
+			binding.dubRegionButton.setText(R.string.dub_region_done)
+			binding.dubRegionButton.setBackgroundResource(R.drawable.dub_button_done_bg)
+		}
+		else
+		{
+			binding.dubRegionView.editable = false
+			binding.dubRegionView.isGone = true
+			binding.dubStatusText.isGone = true
+			binding.dubRegionButton.setText(R.string.dub_region_edit)
+			binding.dubRegionButton.setBackgroundResource(R.drawable.dub_button_region_bg)
+			refreshDub()
+		}
 	}
 
 	private fun stopDub()

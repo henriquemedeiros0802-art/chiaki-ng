@@ -124,8 +124,11 @@
 
     <!-- Dublagem de legendas -->
     <string name="stream_dub">Dublagem</string>
-    <string name="dub_button_on">🎙 Dublagem: LIGADA</string>
-    <string name="dub_button_off">🎙 Dublagem: desligada</string>
+    <string name="dub_button_on">🎙 Dublagem LIGADA</string>
+    <string name="dub_button_off">🎙 Ligar dublagem</string>
+    <string name="dub_region_edit">▭ Marcar legenda</string>
+    <string name="dub_region_done">✔ Concluir</string>
+    <string name="dub_region_hint">Arraste o retângulo azul sobre onde aparece a legenda. Puxe os cantos para ajustar o tamanho.</string>
     <string name="dub_requires_android_8">Dublagem requer Android 8.0 ou superior</string>
     <string name="preferences_category_title_dub">Dublagem de legendas</string>
     <string name="preferences_dub_enabled_title">Ativar dublagem</string>

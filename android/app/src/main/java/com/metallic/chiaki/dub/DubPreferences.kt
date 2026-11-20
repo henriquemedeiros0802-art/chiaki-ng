@@ -58,6 +58,18 @@ class DubPreferences(context: Context)
 		return RectF(left, top, (left + w).coerceIn(left + 0.05f, 1f), (top + h).coerceIn(top + 0.05f, 1f))
 	}
 
+	/** Guarda a área marcada com o dedo (as mesmas chaves das barras em Ajustes). */
+	fun saveRegion(r: RectF)
+	{
+		fun pct(v: Float, lo: Int, hi: Int) = Math.round(v * 100f).coerceIn(lo, hi)
+		sp.edit()
+			.putInt(KEY_REGION_LEFT, pct(r.left, 0, 95))
+			.putInt(KEY_REGION_TOP, pct(r.top, 0, 95))
+			.putInt(KEY_REGION_WIDTH, pct(r.width(), 5, 100))
+			.putInt(KEY_REGION_HEIGHT, pct(r.height(), 3, 100))
+			.apply()
+	}
+
 	val textMode: String get() = sp.getString(KEY_TEXT_MODE, TEXT_MODE_WHITE) ?: TEXT_MODE_WHITE
 	val confirmFrames: Int get() = sp.getInt(KEY_CONFIRM_FRAMES, 2).coerceIn(1, 4)
 	/** Volume do jogo enquanto a voz dublada fala (0..1). */
