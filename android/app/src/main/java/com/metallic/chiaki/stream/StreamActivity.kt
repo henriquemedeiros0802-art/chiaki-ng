@@ -9,6 +9,7 @@ import android.graphics.Matrix
 import android.os.*
 import android.view.*
 import android.widget.EditText
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
@@ -91,29 +92,8 @@ class StreamActivity : AppCompatActivity()
 				showOverlay()
 			else
 				hideOverlay()
+			applyDubInsets(insets)
 			insets
-		}
-
-		viewModel.onScreenControlsEnabled.observe(this, Observer {
-			if(binding.onScreenControlsSwitch.isChecked != it)
-				binding.onScreenControlsSwitch.isChecked = it
-			if(binding.onScreenControlsSwitch.isChecked)
-				binding.touchpadOnlySwitch.isChecked = false
-		})
-		binding.onScreenControlsSwitch.setOnCheckedChangeListener { _, isChecked ->
-			viewModel.setOnScreenControlsEnabled(isChecked)
-			showOverlay()
-		}
-
-		viewModel.touchpadOnlyEnabled.observe(this, Observer {
-			if(binding.touchpadOnlySwitch.isChecked != it)
-				binding.touchpadOnlySwitch.isChecked = it
-			if(binding.touchpadOnlySwitch.isChecked)
-				binding.onScreenControlsSwitch.isChecked = false
-		})
-		binding.touchpadOnlySwitch.setOnCheckedChangeListener { _, isChecked ->
-			viewModel.setTouchpadOnlyEnabled(isChecked)
-			showOverlay()
 		}
 
 		binding.displayModeToggle.addOnButtonCheckedListener { _, _, _ ->
@@ -200,6 +180,19 @@ class StreamActivity : AppCompatActivity()
 		super.onDestroy()
 		stopDub()
 		controlsJob?.cancel()
+	}
+
+	/** Mantém os botões da dublagem longe da câmera frontal e das barras do sistema. */
+	private fun applyDubInsets(insets: WindowInsetsCompat)
+	{
+		val safe = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+		val d = resources.displayMetrics.density
+		val start = safe.left + (16 * d).toInt()
+		val top = safe.top + (12 * d).toInt()
+		(binding.dubBar.layoutParams as FrameLayout.LayoutParams).let { it.marginStart = start; it.topMargin = top }
+		(binding.dubStatusText.layoutParams as FrameLayout.LayoutParams).let { it.marginStart = start; it.topMargin = top + (56 * d).toInt() }
+		binding.dubBar.requestLayout()
+		binding.dubStatusText.requestLayout()
 	}
 
 	private fun setDubEnabled(enabled: Boolean)
