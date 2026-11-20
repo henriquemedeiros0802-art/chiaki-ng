@@ -33,8 +33,11 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" --install "ndk;28.2.13676358" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Python deps for nanopb
-        run: pip install protobuf grpcio-tools
+      - name: Tools for nanopb (protoc)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler python3-protobuf python3-grpcio-tools ninja-build
+          protoc --version
 
       - name: Build debug APK
         working-directory: android
