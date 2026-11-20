@@ -14,7 +14,8 @@ import java.util.Locale
 class LocalSpeaker(
 	context: Context,
 	private val onProblem: (String) -> Unit,
-	private val onFinished: (Int) -> Unit
+	private val onFinished: (Int) -> Unit,
+	private val onReady: () -> Unit = {}
 )
 {
 	private var tts: TextToSpeech? = null
@@ -34,7 +35,10 @@ class LocalSpeaker(
 				if(r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED)
 					onProblem("Instale a voz em português: Ajustes do Android → Idioma → Saída de texto para fala")
 				else
+				{
 					ready = true
+					onReady()
+				}
 				engine.setOnUtteranceProgressListener(object: UtteranceProgressListener()
 				{
 					override fun onStart(utteranceId: String?) {}

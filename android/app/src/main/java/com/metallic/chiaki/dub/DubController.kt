@@ -34,7 +34,7 @@ class DubController(
 {
 	companion object
 	{
-		private const val OCR_MAX_WIDTH = 960
+		private const val OCR_MAX_WIDTH = 1600
 		private const val UNCHANGED_THRESHOLD = 3f          // diferença média de brilho (0..255) para reaproveitar o OCR
 		private const val SEND_CHUNK_SAMPLES = 1600           // 100 ms a 16 kHz
 	}
@@ -54,6 +54,7 @@ class DubController(
 	@Volatile private var latencyMs = 0
 	@Volatile private var lastText = ""
 	@Volatile private var lastError = ""
+	@Volatile private var lastRead = "(procurando…)"
 
 	private val listener = object: DubClient.Listener
 	{
@@ -135,7 +136,8 @@ class DubController(
 			onFinished = { id ->
 				if(id == localActiveId)
 					audioProvider()?.setGains(1f, 1f)       // terminou de falar: devolve o volume do jogo
-			})
+			},
+			onReady = { localSpeaker?.speak(0, "Dublagem ligada") })
 		connected = true
 		publishStatus()
 		s.launch { visionLoop(null) }
@@ -249,7 +251,15 @@ class DubController(
 							read
 						}
 					}
+					lastRead = when
+					{
+						text.isNotBlank() -> text
+						analysis.whiteTextLikely -> "(área com imagem, mas sem texto legível)"
+						else -> "(área escura/sem texto)"
+					}
 					handle(tracker.onFrame(text), c)
+					if(text.isBlank() || lastText.isEmpty())
+						publishStatus()
 				}
 				val elapsed = SystemClock.elapsedRealtime() - t0
 				delay(maxOf(10L, prefs.intervalMs - elapsed))
@@ -277,7 +287,7 @@ class DubController(
 						localActiveId = e.id
 						lastText = e.text
 						audio?.setGains(duckGain, 1f)
-						local.speak(e.id, e.text)
+						local.speak(e.id, stripSpeaker(e.text))
 						publishStatus()
 						continue
 					}
@@ -331,6 +341,13 @@ class DubController(
 		}
 	}
 
+	/** Tira o nome do personagem do começo ("Lucia: Oi") para não ler o nome em voz alta. */
+	private fun stripSpeaker(text: String): String
+	{
+		val m = Regex("^\\s*[\\p{L}][\\p{L} .'-]{0,24}:\\s+(.+)$").find(text)
+		return m?.groupValues?.get(1) ?: text
+	}
+
 	private fun publishStatus()
 	{
 		val local = prefs.mode == DubPreferences.MODE_LOCAL
@@ -338,7 +355,8 @@ class DubController(
 		sb.append(if(connected) (if(local) "● ativa" else "● online") else "○ conectando…")
 		if(speaker.isNotEmpty()) sb.append(" · ").append(speaker)
 		if(latencyMs > 0) sb.append(" · ").append(latencyMs).append(" ms")
-		if(lastText.isNotEmpty()) sb.append("\n").append(lastText.take(60))
+		if(lastText.isNotEmpty()) sb.append("\n▶ ").append(lastText.take(60))
+		else sb.append("\nlendo: ").append(lastRead.take(60))
 		if(lastError.isNotEmpty()) sb.append("\n⚠ ").append(lastError.take(80))
 		onStatus(sb.toString())
 	}

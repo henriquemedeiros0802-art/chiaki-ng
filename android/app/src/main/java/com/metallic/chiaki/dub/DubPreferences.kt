@@ -70,7 +70,7 @@ class DubPreferences(context: Context)
 			.apply()
 	}
 
-	val textMode: String get() = sp.getString(KEY_TEXT_MODE, TEXT_MODE_WHITE) ?: TEXT_MODE_WHITE
+	val textMode: String get() = sp.getString(KEY_TEXT_MODE, TEXT_MODE_ANY) ?: TEXT_MODE_ANY
 	val confirmFrames: Int get() = sp.getInt(KEY_CONFIRM_FRAMES, 2).coerceIn(1, 4)
 	/** Volume do jogo enquanto a voz dublada fala (0..1). */
 	val duckGain: Float get() = sp.getInt(KEY_DUCK_PERCENT, 20).coerceIn(0, 100) / 100f

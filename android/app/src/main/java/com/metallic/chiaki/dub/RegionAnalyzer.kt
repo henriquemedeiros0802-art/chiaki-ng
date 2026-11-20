@@ -8,7 +8,7 @@ package com.metallic.chiaki.dub
  *  - impressão digital do recorte → permite pular o OCR quando nada mudou.
  */
 class RegionAnalyzer(
-	private val brightMin: Int = 200,
+	private val brightMin: Int = 150,
 	private val minBrightRatio: Float = 0.003f,
 	private val gridW: Int = 32,
 	private val gridH: Int = 8

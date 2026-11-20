@@ -38,7 +38,8 @@ class FrameGrabber(private val view: SurfaceView)
 			(region.right * w).toInt().coerceAtMost(w), (region.bottom * h).toInt().coerceAtMost(h))
 		if(src.width() < 8 || src.height() < 8)
 			return null
-		val dw = minOf(src.width(), maxWidth)
+		// legendas são pequenas: amplia até 2x para o OCR enxergar melhor
+		val dw = minOf(src.width() * 2, maxWidth)
 		val dh = maxOf(8, src.height() * dw / src.width())
 		var b = bitmap
 		if(b == null || b.width != dw || b.height != dh)
