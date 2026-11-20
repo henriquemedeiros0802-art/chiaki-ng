@@ -39,6 +39,10 @@ jobs:
           sudo apt-get install -y -qq protobuf-compiler python3-protobuf ninja-build
           protoc --version
 
+      - name: Write build number into the app
+        run: |
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <string name="dub_build" translatable="false">${{ github.run_number }}</string>\n</resources>\n' > android/app/src/main/res/values/build_info.xml
+
       - name: Use fixed signing key (so new builds install over old ones)
         run: |
           printf 'chiakiKeystore=../ci-debug.keystore\nchiakiKeystorePW=android\nchiakiKeyAlias=dublador\nchiakiKeyPW=android\n' > android/local.properties
@@ -65,18 +69,18 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p out
-          cp android/app/build/outputs/apk/debug/*.apk out/dublador-ps5.apk
+          cp android/app/build/outputs/apk/debug/*.apk out/dublador-ps5-build-${{ github.run_number }}.apk
           ls -la out
 
       - uses: actions/upload-artifact@v4
         with:
           name: dublador-ps5-apk
-          path: out/dublador-ps5.apk
+          path: out/dublador-ps5-build-${{ github.run_number }}.apk
 
       - name: Publish release with the APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: dublador-build-${{ github.run_number }}
           name: Dublador PS5 build ${{ github.run_number }}
-          files: out/dublador-ps5.apk
+          files: out/dublador-ps5-build-${{ github.run_number }}.apk
           prerelease: true

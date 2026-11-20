@@ -121,6 +121,7 @@ class StreamActivity : AppCompatActivity()
 			Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
 		}
 		dubber = subtitleDubber
+		Toast.makeText(this, "Dublador build ${getString(R.string.dub_build)}: use a barra no topo da tela", Toast.LENGTH_LONG).show()
 		binding.dubSwitch.setOnCheckedChangeListener { _, isChecked ->
 			if(isChecked)
 				subtitleDubber.start()
