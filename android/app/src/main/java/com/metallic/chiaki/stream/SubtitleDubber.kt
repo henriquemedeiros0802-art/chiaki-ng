@@ -16,7 +16,9 @@ import android.view.SurfaceView
 import android.view.View
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import com.google.mlkit.nl.languageid.LanguageIdentification
 import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.TranslatorOptions
 import com.google.mlkit.common.model.DownloadConditions
@@ -25,6 +27,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -56,10 +59,13 @@ class SubtitleDubber(
 
 		/** (top, bottom) as fractions of the video height */
 		val BANDS = listOf(
-			Triple("Baixo", 0.72f, 0.97f),
+			Triple("Baixo", 0.78f, 0.995f),
 			Triple("Meio-baixo", 0.58f, 0.85f),
 			Triple("Topo", 0.03f, 0.28f)
 		)
+		/** subtitles are centred: ignore the minimap / HUD at the sides */
+		private const val CROP_LEFT = 0.18f
+		private const val CROP_RIGHT = 0.82f
 	}
 
 	private val mainHandler = Handler(Looper.getMainLooper())
@@ -67,12 +73,8 @@ class SubtitleDubber(
 	private val copyHandler = Handler(copyThread.looper)
 
 	private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-	private val translator = Translation.getClient(
-		TranslatorOptions.Builder()
-			.setSourceLanguage(TranslateLanguage.ENGLISH)
-			.setTargetLanguage(TranslateLanguage.PORTUGUESE)
-			.build()
-	)
+	private val langId = LanguageIdentification.getClient()
+	private val translators = HashMap<String, Translator>()
 
 	private var ttsReady = false
 	private var speaking = false
@@ -120,21 +122,34 @@ class SubtitleDubber(
 			onStatus("Precisa do Android 8 ou mais novo.")
 			return
 		}
+		onStatus("Dublagem ligada")
 		job = scope.launch {
-			try
-			{
-				onStatus("Baixando idioma…")
-				translator.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
-				onStatus("Dublagem ligada")
-			}
-			catch(e: Exception)
-			{
-				onStatus("Falha ao preparar a tradução. Conecte no Wi-Fi e tente de novo.")
-				job = null
-				return@launch
-			}
+			// warm up the English model in the background; Portuguese subtitles need no model
+			launch { try { translatorFor(TranslateLanguage.ENGLISH).downloadModelIfNeeded(DownloadConditions.Builder().build()).await() } catch(e: Exception) {} }
 			runLoop()
 		}
+	}
+
+	private fun translatorFor(source: String): Translator =
+		translators.getOrPut(source) {
+			Translation.getClient(
+				TranslatorOptions.Builder()
+					.setSourceLanguage(source)
+					.setTargetLanguage(TranslateLanguage.PORTUGUESE)
+					.build()
+			)
+		}
+
+	/** Portuguese (or unknown) text is spoken as is; other languages are translated on-device. */
+	private suspend fun toPortuguese(text: String): String
+	{
+		val tag = try { langId.identifyLanguage(text).await() } catch(e: Exception) { "und" }
+		if(tag == "und" || tag == "pt")
+			return text
+		val source = TranslateLanguage.fromLanguageTag(tag) ?: return text
+		val tr = translatorFor(source)
+		tr.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
+		return tr.translate(text).await()
 	}
 
 	fun stop()
@@ -153,7 +168,8 @@ class SubtitleDubber(
 		stop()
 		tts.shutdown()
 		recognizer.close()
-		translator.close()
+		translators.values.forEach { it.close() }
+		langId.close()
 		copyThread.quitSafely()
 	}
 
@@ -165,7 +181,7 @@ class SubtitleDubber(
 		var candidateReads = 0
 		var lastSpoken = ""
 
-		while(scope.isActive && job?.isActive == true)
+		while(currentCoroutineContext().isActive)
 		{
 			val bmp = grabBand()
 			if(bmp != null)
@@ -208,7 +224,7 @@ class SubtitleDubber(
 						lastSpoken = candidate
 						try
 						{
-							val translated = translator.translate(candidate).await()
+							val translated = toPortuguese(candidate)
 							show(translated)
 							enqueue(translated)
 						}
@@ -250,7 +266,7 @@ class SubtitleDubber(
 		val band = BANDS[bandIndex]
 		val top = (h * band.second).toInt()
 		val bottom = max(top + 1, (h * band.third).toInt())
-		val rect = Rect(0, top, w, bottom)
+		val rect = Rect((w * CROP_LEFT).toInt(), top, (w * CROP_RIGHT).toInt(), bottom)
 		val bmp = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888)
 		return suspendCancellableCoroutine { cont ->
 			try
