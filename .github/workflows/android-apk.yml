@@ -39,6 +39,11 @@ jobs:
           sudo apt-get install -y -qq protobuf-compiler python3-protobuf ninja-build
           protoc --version
 
+      - name: Use fixed signing key (so new builds install over old ones)
+        run: |
+          printf 'chiakiKeystore=../ci-debug.keystore\nchiakiKeystorePW=android\nchiakiKeyAlias=dublador\nchiakiKeyPW=android\n' > android/local.properties
+          cat android/local.properties
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon 2>&1 | tee ../build.log; exit ${PIPESTATUS[0]}
