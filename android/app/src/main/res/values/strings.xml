@@ -105,6 +105,10 @@
     <string name="display_hosts_empty_discovery_on_info">No consoles added or discovered.</string>
     <string name="stream_on_screen_controls">On-Screen Controls</string>
     <string name="stream_touchpad_only">Touchpad only</string>
+    <string name="stream_dubbing">Dublar (PT-BR)</string>
+    <string name="stream_dubbing_band">Faixa da legenda</string>
+    <string name="stream_dubbing_downloading">Baixando idioma…</string>
+    <string name="stream_dubbing_failed">Falha ao preparar a tradução. Conecte no Wi-Fi e tente de novo.</string>
 
     <!-- Don't localize these -->
     <string name="preferences_discovery_enabled_key">discovery_enabled</string>

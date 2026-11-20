@@ -1,0 +1,58 @@
+name: Android APK (dublador)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dublador]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK and CMake
+        run: |
+          sdkmanager --install "ndk;28.2.13676358" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Python deps for nanopb
+        run: pip install protobuf grpcio-tools
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/*.apk out/dublador-ps5.apk
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dublador-ps5-apk
+          path: out/dublador-ps5.apk
+
+      - name: Publish release with the APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dublador-build-${{ github.run_number }}
+          name: Dublador PS5 build ${{ github.run_number }}
+          files: out/dublador-ps5.apk
+          prerelease: true

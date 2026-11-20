@@ -9,6 +9,7 @@ import android.graphics.Matrix
 import android.os.*
 import android.view.*
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
@@ -54,6 +55,7 @@ class StreamActivity : AppCompatActivity()
 	private lateinit var insetsController: WindowInsetsControllerCompat
 
 	private val uiVisibilityHandler = Handler(Looper.getMainLooper())
+	private var dubber: SubtitleDubber? = null
 
 	override fun onCreate(savedInstanceState: Bundle?)
 	{
@@ -115,6 +117,23 @@ class StreamActivity : AppCompatActivity()
 			showOverlay()
 		}
 
+		val subtitleDubber = SubtitleDubber(this, binding.surfaceView, binding.dubSubtitleText, lifecycleScope) {
+			Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+		}
+		dubber = subtitleDubber
+		binding.dubSwitch.setOnCheckedChangeListener { _, isChecked ->
+			if(isChecked)
+				subtitleDubber.start()
+			else
+				subtitleDubber.stop()
+			showOverlay()
+		}
+		binding.dubBandButton.setOnClickListener {
+			subtitleDubber.nextBand()
+			Toast.makeText(this, "Faixa da legenda: ${subtitleDubber.bandName}", Toast.LENGTH_SHORT).show()
+			showOverlay()
+		}
+
 		//viewModel.session.attachToTextureView(textureView)
 		viewModel.session.attachToSurfaceView(binding.surfaceView)
 		viewModel.session.state.observe(this, Observer { this.stateChanged(it) })
@@ -169,6 +188,7 @@ class StreamActivity : AppCompatActivity()
 	override fun onDestroy()
 	{
 		super.onDestroy()
+		dubber?.release()
 		controlsJob?.cancel()
 	}
 
