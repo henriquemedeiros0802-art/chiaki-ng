@@ -128,6 +128,10 @@ class StreamActivity : AppCompatActivity()
 				subtitleDubber.stop()
 			showOverlay()
 		}
+		binding.dubVoiceButton.setOnClickListener {
+			subtitleDubber.nextVoiceMode()
+			binding.dubVoiceButton.text = "Voz: ${subtitleDubber.voiceModeName}"
+		}
 		binding.dubBandButton.setOnClickListener {
 			subtitleDubber.nextBand()
 			Toast.makeText(this, "Faixa da legenda: ${subtitleDubber.bandName}", Toast.LENGTH_SHORT).show()

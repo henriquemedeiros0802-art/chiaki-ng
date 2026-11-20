@@ -133,8 +133,6 @@ dependencies {
     implementation libs.oboe
 
     implementation libs.mlkit.text
-    implementation libs.mlkit.translate
-    implementation libs.mlkit.langid
     implementation libs.coroutines.play.services
 
     testImplementation 'junit:junit:4.13.2'
