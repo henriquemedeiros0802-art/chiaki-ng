@@ -93,6 +93,12 @@ private class ChiakiNative
 		@JvmStatic external fun sessionSetSurface(ptr: Long, surface: Surface?)
 		@JvmStatic external fun sessionSetControllerState(ptr: Long, controllerState: ControllerState)
 		@JvmStatic external fun sessionSetLoginPin(ptr: Long, pin: String)
+		@JvmStatic external fun sessionAudioSetTap(ptr: Long, enabled: Boolean)
+		@JvmStatic external fun sessionAudioTapRead(ptr: Long, dst: ShortArray, maxSamples: Int): Int
+		@JvmStatic external fun sessionAudioFormat(ptr: Long): Long
+		@JvmStatic external fun sessionAudioDubWrite(ptr: Long, src: ShortArray, offset: Int, count: Int): Int
+		@JvmStatic external fun sessionAudioDubFlush(ptr: Long)
+		@JvmStatic external fun sessionAudioSetGains(ptr: Long, gameGain: Float, dubGain: Float)
 		@JvmStatic external fun discoveryServiceCreate(result: CreateResult, options: DiscoveryServiceOptions, javaService: DiscoveryService)
 		@JvmStatic external fun discoveryServiceFree(ptr: Long)
 		@JvmStatic external fun discoveryServiceWakeup(ptr: Long, host: String, userCredential: Long, ps5: Boolean)
@@ -391,6 +397,38 @@ class Session(connectInfo: ConnectInfo, logFile: String?, logVerbose: Boolean)
 	{
 		ChiakiNative.sessionSetLoginPin(nativePtr, pin)
 	}
+
+	/** Controle de áudio usado pela dublagem (ver pacote com.metallic.chiaki.dub). */
+	val audio: SessionAudio = object: SessionAudio
+	{
+		override fun setTap(enabled: Boolean) { if(nativePtr != 0L) ChiakiNative.sessionAudioSetTap(nativePtr, enabled) }
+		override fun tapRead(dst: ShortArray, maxSamples: Int): Int =
+			if(nativePtr != 0L) ChiakiNative.sessionAudioTapRead(nativePtr, dst, maxSamples) else 0
+		override fun format(): Pair<Int, Int> {
+			val v = if(nativePtr != 0L) ChiakiNative.sessionAudioFormat(nativePtr) else 0L
+			return Pair((v ushr 32).toInt(), (v and 0xFFFFFFFFL).toInt())   // canais, taxa
+		}
+		override fun dubWrite(src: ShortArray, offset: Int, count: Int): Int =
+			if(nativePtr != 0L) ChiakiNative.sessionAudioDubWrite(nativePtr, src, offset, count) else 0
+		override fun dubFlush() { if(nativePtr != 0L) ChiakiNative.sessionAudioDubFlush(nativePtr) }
+		override fun setGains(gameGain: Float, dubGain: Float) {
+			if(nativePtr != 0L) ChiakiNative.sessionAudioSetGains(nativePtr, gameGain, dubGain)
+		}
+	}
+}
+
+/** Ponte de áudio da sessão: cópia do áudio do jogo e injeção de voz dublada. */
+interface SessionAudio
+{
+	fun setTap(enabled: Boolean)
+	/** Lê amostras intercaladas já decodificadas. */
+	fun tapRead(dst: ShortArray, maxSamples: Int): Int
+	/** (canais, taxa); (0, 0) até o stream de áudio abrir. */
+	fun format(): Pair<Int, Int>
+	/** Escreve voz mono na taxa do stream; retorna quantas amostras coube. */
+	fun dubWrite(src: ShortArray, offset: Int, count: Int): Int
+	fun dubFlush()
+	fun setGains(gameGain: Float, dubGain: Float)
 }
 
 data class DiscoveryHost(

@@ -9,8 +9,13 @@
 
 #include <oboe/Oboe.h>
 
+#include "dub-mixer.hpp"
+
+#include <atomic>
+
 #define BUFFER_CHUNK_SIZE 1024
 #define BUFFER_CHUNKS_COUNT 32
+
 
 using AudioBuffer = CircularBuffer<BUFFER_CHUNKS_COUNT, BUFFER_CHUNK_SIZE>;
 
@@ -35,6 +40,11 @@ struct AudioOutput
 	AudioOutputCallback stream_callback;
 	AudioBuffer buf;
 
+	std::atomic<uint32_t> channels{2};
+	std::atomic<uint32_t> rate{48000};
+
+	DubMixer mixer;
+
 	AudioOutput() : stream_callback(this) {}
 };
 
@@ -57,6 +67,8 @@ extern "C" void android_chiaki_audio_output_free(void *audio_output)
 extern "C" void android_chiaki_audio_output_settings(uint32_t channels, uint32_t rate, void *audio_output)
 {
 	auto ao = reinterpret_cast<AudioOutput *>(audio_output);
+	ao->channels = channels;
+	ao->rate = rate;
 
 	oboe::AudioStreamBuilder builder;
 	builder.setPerformanceMode(oboe::PerformanceMode::LowLatency)
@@ -83,10 +95,50 @@ extern "C" void android_chiaki_audio_output_frame(int16_t *buf, size_t samples_c
 {
 	auto ao = reinterpret_cast<AudioOutput *>(audio_output);
 
+	// Cópia do áudio original (antes de ducking/mixagem) para o pipeline de dublagem.
+	ao->mixer.OnGameAudio(buf, samples_count);
+
 	size_t buf_size = samples_count * sizeof(int16_t);
 	size_t pushed = ao->buf.Push(reinterpret_cast<uint8_t *>(buf), buf_size);
 	if(pushed < buf_size)
 		CHIAKI_LOGW(ao->log, "Audio Output Buffer Overflow!");
+}
+
+extern "C" void android_chiaki_audio_output_set_tap(void *audio_output, int enabled)
+{
+	reinterpret_cast<AudioOutput *>(audio_output)->mixer.tap_enabled = enabled != 0;
+}
+
+extern "C" size_t android_chiaki_audio_output_tap_read(void *audio_output, int16_t *dst, size_t max_samples)
+{
+	return reinterpret_cast<AudioOutput *>(audio_output)->mixer.tap.Read(dst, max_samples);
+}
+
+extern "C" uint32_t android_chiaki_audio_output_channels(void *audio_output)
+{
+	return reinterpret_cast<AudioOutput *>(audio_output)->channels;
+}
+
+extern "C" uint32_t android_chiaki_audio_output_rate(void *audio_output)
+{
+	return reinterpret_cast<AudioOutput *>(audio_output)->rate;
+}
+
+extern "C" size_t android_chiaki_audio_output_dub_write(void *audio_output, const int16_t *mono, size_t samples)
+{
+	return reinterpret_cast<AudioOutput *>(audio_output)->mixer.dub.Write(mono, samples);
+}
+
+extern "C" void android_chiaki_audio_output_dub_flush(void *audio_output)
+{
+	reinterpret_cast<AudioOutput *>(audio_output)->mixer.Flush();
+}
+
+extern "C" void android_chiaki_audio_output_set_gains(void *audio_output, float game_gain, float dub_gain)
+{
+	auto ao = reinterpret_cast<AudioOutput *>(audio_output);
+	ao->mixer.game_gain_target = game_gain;
+	ao->mixer.dub_gain_target = dub_gain;
 }
 
 oboe::DataCallbackResult AudioOutputCallback::onAudioReady(oboe::AudioStream *stream, void *audio_data, int32_t num_frames)
@@ -109,6 +161,10 @@ oboe::DataCallbackResult AudioOutputCallback::onAudioReady(oboe::AudioStream *st
 		CHIAKI_LOGV(audio_output->log, "Audio Output Buffer Underflow!");
 		memset(buf + buf_size_delivered, 0, buf_size_requested - buf_size_delivered);
 	}
+
+	// Mixagem da dublagem + ducking do jogo
+	audio_output->mixer.Process(reinterpret_cast<int16_t *>(audio_data), num_frames,
+		stream->getChannelCount(), static_cast<float>(stream->getSampleRate()));
 
 	return oboe::DataCallbackResult::Continue;
 }

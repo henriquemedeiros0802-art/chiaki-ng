@@ -93,4 +93,70 @@
             app:title="@string/preferences_import_settings_title"
             app:icon="@drawable/ic_import"/>
     </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="category_dub"
+        app:title="@string/preferences_category_title_dub">
+        <SwitchPreference
+            app:key="dub_enabled"
+            app:title="@string/preferences_dub_enabled_title"
+            app:summary="@string/preferences_dub_enabled_summary"
+            app:defaultValue="false" />
+        <EditTextPreference
+            app:key="dub_server_url"
+            app:title="@string/preferences_dub_server_title"
+            app:summary="@string/preferences_dub_server_summary"
+            app:useSimpleSummaryProvider="false" />
+        <EditTextPreference
+            app:key="dub_token"
+            app:title="@string/preferences_dub_token_title"
+            app:summary="@string/preferences_dub_token_summary" />
+        <EditTextPreference
+            app:key="dub_game"
+            app:title="@string/preferences_dub_game_title"
+            app:summary="@string/preferences_dub_game_summary"
+            app:defaultValue="jogo" />
+        <SeekBarPreference
+            app:key="dub_region_left"
+            app:title="@string/preferences_dub_region_left_title"
+            app:min="0" android:max="90" app:defaultValue="10" app:showSeekBarValue="true" />
+        <SeekBarPreference
+            app:key="dub_region_top"
+            app:title="@string/preferences_dub_region_top_title"
+            app:min="0" android:max="95" app:defaultValue="74" app:showSeekBarValue="true" />
+        <SeekBarPreference
+            app:key="dub_region_width"
+            app:title="@string/preferences_dub_region_width_title"
+            app:min="10" android:max="100" app:defaultValue="80" app:showSeekBarValue="true" />
+        <SeekBarPreference
+            app:key="dub_region_height"
+            app:title="@string/preferences_dub_region_height_title"
+            app:min="5" android:max="60" app:defaultValue="22" app:showSeekBarValue="true" />
+        <SwitchPreference
+            app:key="dub_show_region"
+            app:title="@string/preferences_dub_show_region_title"
+            app:summary="@string/preferences_dub_show_region_summary"
+            app:defaultValue="false" />
+        <ListPreference
+            app:key="dub_text_mode"
+            app:title="@string/preferences_dub_text_mode_title"
+            app:summary="%s"
+            app:entries="@array/dub_text_mode_entries"
+            app:entryValues="@array/dub_text_mode_values"
+            app:defaultValue="white" />
+        <SeekBarPreference
+            app:key="dub_confirm_frames"
+            app:title="@string/preferences_dub_confirm_title"
+            app:summary="@string/preferences_dub_confirm_summary"
+            app:min="1" android:max="4" app:defaultValue="2" app:showSeekBarValue="true" />
+        <SeekBarPreference
+            app:key="dub_duck_percent"
+            app:title="@string/preferences_dub_duck_title"
+            app:min="0" android:max="100" app:defaultValue="20" app:showSeekBarValue="true" />
+        <SeekBarPreference
+            app:key="dub_interval_ms"
+            app:title="@string/preferences_dub_interval_title"
+            app:summary="@string/preferences_dub_interval_summary"
+            app:min="30" android:max="500" app:defaultValue="100" app:showSeekBarValue="true" />
+    </PreferenceCategory>
 </PreferenceScreen>

@@ -453,6 +453,87 @@ JNIEXPORT void JNICALL JNI_FCN(sessionSetControllerState)(JNIEnv *env, jobject o
 	chiaki_session_set_controller_state(&session->session, &controller_state);
 }
 
+// ---- Dublagem: acesso ao áudio decodificado e à mixagem ----
+
+JNIEXPORT void JNICALL JNI_FCN(sessionAudioSetTap)(JNIEnv *env, jobject obj, jlong ptr, jboolean enabled)
+{
+	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;
+	if(session && session->audio_output)
+		android_chiaki_audio_output_set_tap(session->audio_output, enabled ? 1 : 0);
+}
+
+/** Retorna a quantidade de amostras (intercaladas) copiadas para dst. */
+JNIEXPORT jint JNICALL JNI_FCN(sessionAudioTapRead)(JNIEnv *env, jobject obj, jlong ptr, jshortArray dst, jint max_samples)
+{
+	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;
+	if(!session || !session->audio_output)
+		return 0;
+	jint cap = E->GetArrayLength(env, dst);
+	if(max_samples > cap)
+		max_samples = cap;
+	jshort tmp[4096];
+	jint total = 0;
+	while(total < max_samples)
+	{
+		size_t want = (size_t)(max_samples - total);
+		if(want > 4096)
+			want = 4096;
+		size_t got = android_chiaki_audio_output_tap_read(session->audio_output, tmp, want);
+		if(got == 0)
+			break;
+		E->SetShortArrayRegion(env, dst, total, (jsize)got, tmp);
+		total += (jint)got;
+	}
+	return total;
+}
+
+/** Retorna canais (bits 32..63) e taxa (bits 0..31) do stream de áudio; 0 se ainda não abriu. */
+JNIEXPORT jlong JNICALL JNI_FCN(sessionAudioFormat)(JNIEnv *env, jobject obj, jlong ptr)
+{
+	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;
+	if(!session || !session->audio_output)
+		return 0;
+	uint64_t ch = android_chiaki_audio_output_channels(session->audio_output);
+	uint64_t rate = android_chiaki_audio_output_rate(session->audio_output);
+	return (jlong)((ch << 32) | rate);
+}
+
+/** Retorna quantas amostras mono coube no buffer de saída. */
+JNIEXPORT jint JNICALL JNI_FCN(sessionAudioDubWrite)(JNIEnv *env, jobject obj, jlong ptr, jshortArray src, jint offset, jint count)
+{
+	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;
+	if(!session || !session->audio_output)
+		return 0;
+	jshort tmp[4096];
+	jint total = 0;
+	while(total < count)
+	{
+		jint n = count - total;
+		if(n > 4096)
+			n = 4096;
+		E->GetShortArrayRegion(env, src, offset + total, n, tmp);
+		size_t wrote = android_chiaki_audio_output_dub_write(session->audio_output, tmp, (size_t)n);
+		total += (jint)wrote;
+		if((jint)wrote < n)
+			break;
+	}
+	return total;
+}
+
+JNIEXPORT void JNICALL JNI_FCN(sessionAudioDubFlush)(JNIEnv *env, jobject obj, jlong ptr)
+{
+	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;
+	if(session && session->audio_output)
+		android_chiaki_audio_output_dub_flush(session->audio_output);
+}
+
+JNIEXPORT void JNICALL JNI_FCN(sessionAudioSetGains)(JNIEnv *env, jobject obj, jlong ptr, jfloat game_gain, jfloat dub_gain)
+{
+	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;
+	if(session && session->audio_output)
+		android_chiaki_audio_output_set_gains(session->audio_output, game_gain, dub_gain);
+}
+
 JNIEXPORT void JNICALL JNI_FCN(sessionSetLoginPin)(JNIEnv *env, jobject obj, jlong ptr, jstring pin_java)
 {
 	AndroidChiakiSession *session = (AndroidChiakiSession *)ptr;

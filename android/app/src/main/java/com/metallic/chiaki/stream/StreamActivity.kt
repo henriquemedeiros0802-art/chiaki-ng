@@ -25,6 +25,8 @@ import com.metallic.chiaki.R
 import com.metallic.chiaki.common.Preferences
 import com.metallic.chiaki.common.ext.viewModelFactory
 import com.metallic.chiaki.databinding.ActivityStreamBinding
+import com.metallic.chiaki.dub.DubController
+import com.metallic.chiaki.dub.DubPreferences
 import com.metallic.chiaki.lib.ConnectInfo
 import com.metallic.chiaki.lib.ConnectVideoProfile
 import com.metallic.chiaki.session.*
@@ -54,6 +56,9 @@ class StreamActivity : AppCompatActivity()
 	private lateinit var insetsController: WindowInsetsControllerCompat
 
 	private val uiVisibilityHandler = Handler(Looper.getMainLooper())
+
+	private lateinit var dubPrefs: DubPreferences
+	private var dubController: DubController? = null
 
 	override fun onCreate(savedInstanceState: Bundle?)
 	{
@@ -120,6 +125,14 @@ class StreamActivity : AppCompatActivity()
 		viewModel.session.state.observe(this, Observer { this.stateChanged(it) })
 		adjustStreamViewAspect()
 
+		dubPrefs = DubPreferences(this)
+		binding.dubSwitch.isChecked = dubPrefs.enabled
+		binding.dubSwitch.setOnCheckedChangeListener { _, isChecked ->
+			dubPrefs.enabled = isChecked
+			refreshDub()
+			showOverlay()
+		}
+
 		if(Preferences(this).rumbleEnabled)
 		{
 			val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
@@ -158,18 +171,59 @@ class StreamActivity : AppCompatActivity()
 		super.onResume()
 		hideSystemUI()
 		viewModel.session.resume()
+		binding.dubSwitch.isChecked = dubPrefs.enabled
+		refreshDub()
 	}
 
 	override fun onPause()
 	{
 		super.onPause()
+		stopDub()
 		viewModel.session.pause()
 	}
 
 	override fun onDestroy()
 	{
 		super.onDestroy()
+		stopDub()
 		controlsJob?.cancel()
+	}
+
+	private fun stopDub()
+	{
+		dubController?.stop()
+		dubController = null
+		if(!::binding.isInitialized)
+			return
+		binding.dubStatusText.isGone = true
+		binding.dubRegionView.isGone = true
+	}
+
+	/** (Re)inicia a dublagem conforme as configurações; chamada ao ligar o switch e ao voltar para a tela. */
+	private fun refreshDub()
+	{
+		stopDub()
+		if(!dubPrefs.enabled)
+			return
+		binding.dubStatusText.isVisible = true
+		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+		{
+			binding.dubStatusText.setText(R.string.dub_requires_android_8)
+			return
+		}
+		if(dubPrefs.showRegion)
+		{
+			binding.dubRegionView.target = binding.surfaceView
+			binding.dubRegionView.region = dubPrefs.region
+			binding.dubRegionView.isVisible = true
+		}
+		val controller = DubController(
+			binding.surfaceView,
+			{ viewModel.session.session?.audio },
+			dubPrefs,
+			{ text -> runOnUiThread { binding.dubStatusText.text = text } })
+		dubController = controller
+		controller.start()
 	}
 
 	private fun reconnect()

@@ -20,6 +20,27 @@
             android:layout_height="wrap_content"/>
     </com.metallic.chiaki.stream.AspectRatioFrameLayout>
 
+    <com.metallic.chiaki.dub.RegionOutlineView
+        android:id="@+id/dubRegionView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/dubStatusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="8dp"
+        android:padding="4dp"
+        android:maxWidth="320dp"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:textSize="11sp"
+        android:textColor="@color/stream_text"
+        android:background="@color/stream_overlay_background"
+        android:visibility="gone"/>
+
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
@@ -43,6 +64,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fitsSystemWindows="true">
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/dubSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_margin="8dp"
+            android:padding="8dp"
+            android:text="@string/stream_dub"
+            app:switchPadding="8dp"
+            android:textColor="@color/stream_text"
+            android:background="@color/stream_overlay_background"
+            android:clickable="true"
+            android:focusable="false"/>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

@@ -121,4 +121,31 @@
     <string name="preferences_fps_key">stream_fps</string>
     <string name="preferences_bitrate_key">stream_bitrate</string>
     <string name="preferences_codec_key">stream_codec</string>
+
+    <!-- Dublagem de legendas -->
+    <string name="stream_dub">Dublagem</string>
+    <string name="dub_requires_android_8">Dublagem requer Android 8.0 ou superior</string>
+    <string name="preferences_category_title_dub">Dublagem de legendas</string>
+    <string name="preferences_dub_enabled_title">Ativar dublagem</string>
+    <string name="preferences_dub_enabled_summary">Lê a legenda na tela e fala em português com a voz do personagem</string>
+    <string name="preferences_dub_server_title">Endereço do servidor</string>
+    <string name="preferences_dub_server_summary">Ex.: 192.168.0.10:8765 ou https://dublagem.exemplo.com</string>
+    <string name="preferences_dub_token_title">Token de acesso</string>
+    <string name="preferences_dub_token_summary">Igual ao DUB_TOKEN do servidor</string>
+    <string name="preferences_dub_game_title">Nome do jogo</string>
+    <string name="preferences_dub_game_summary">Cada jogo guarda suas próprias vozes clonadas</string>
+    <string name="preferences_dub_region_left_title">Área da legenda: esquerda (%)</string>
+    <string name="preferences_dub_region_top_title">Área da legenda: topo (%)</string>
+    <string name="preferences_dub_region_width_title">Área da legenda: largura (%)</string>
+    <string name="preferences_dub_region_height_title">Área da legenda: altura (%)</string>
+    <string name="preferences_dub_show_region_title">Mostrar a área da legenda</string>
+    <string name="preferences_dub_show_region_summary">Desenha uma moldura azul para calibrar a área</string>
+    <string name="preferences_dub_text_mode_title">Cor da legenda</string>
+    <string name="preferences_dub_text_mode_white">Branca (mais rápido e economiza bateria)</string>
+    <string name="preferences_dub_text_mode_any">Qualquer cor (lê sempre)</string>
+    <string name="preferences_dub_confirm_title">Leituras para confirmar a legenda</string>
+    <string name="preferences_dub_confirm_summary">1 = começa mais rápido; 2 ou 3 = evita falar texto pela metade</string>
+    <string name="preferences_dub_duck_title">Volume do jogo durante a voz (%)</string>
+    <string name="preferences_dub_interval_title">Intervalo de leitura (ms)</string>
+    <string name="preferences_dub_interval_summary">Menor = reage mais rápido, usa mais bateria</string>
 </resources>

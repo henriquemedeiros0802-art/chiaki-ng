@@ -1,0 +1,7 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27
+numpy>=1.26
+websockets>=12
+# Opcional (identificação de falante muito melhor; precisa de PyTorch):
+# resemblyzer>=0.1.4
