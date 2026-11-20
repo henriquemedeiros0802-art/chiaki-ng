@@ -128,10 +128,12 @@ class StreamActivity : AppCompatActivity()
 		dubPrefs = DubPreferences(this)
 		binding.dubSwitch.isChecked = dubPrefs.enabled
 		binding.dubSwitch.setOnCheckedChangeListener { _, isChecked ->
-			dubPrefs.enabled = isChecked
-			refreshDub()
+			if(dubPrefs.enabled != isChecked)
+				setDubEnabled(isChecked)
 			showOverlay()
 		}
+		binding.dubButton.setOnClickListener { setDubEnabled(!dubPrefs.enabled) }
+		updateDubButton()
 
 		if(Preferences(this).rumbleEnabled)
 		{
@@ -172,6 +174,7 @@ class StreamActivity : AppCompatActivity()
 		hideSystemUI()
 		viewModel.session.resume()
 		binding.dubSwitch.isChecked = dubPrefs.enabled
+		updateDubButton()
 		refreshDub()
 	}
 
@@ -187,6 +190,20 @@ class StreamActivity : AppCompatActivity()
 		super.onDestroy()
 		stopDub()
 		controlsJob?.cancel()
+	}
+
+	private fun setDubEnabled(enabled: Boolean)
+	{
+		dubPrefs.enabled = enabled
+		if(binding.dubSwitch.isChecked != enabled)
+			binding.dubSwitch.isChecked = enabled
+		updateDubButton()
+		refreshDub()
+	}
+
+	private fun updateDubButton()
+	{
+		binding.dubButton.setText(if(dubPrefs.enabled) R.string.dub_button_on else R.string.dub_button_off)
 	}
 
 	private fun stopDub()
