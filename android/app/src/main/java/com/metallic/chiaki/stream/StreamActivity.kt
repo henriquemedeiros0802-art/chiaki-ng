@@ -218,6 +218,7 @@ class StreamActivity : AppCompatActivity()
 			binding.dubRegionView.isVisible = true
 		}
 		val controller = DubController(
+			this,
 			binding.surfaceView,
 			{ viewModel.session.session?.audio },
 			dubPrefs,

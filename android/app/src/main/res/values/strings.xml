@@ -128,6 +128,9 @@
     <string name="preferences_category_title_dub">Dublagem de legendas</string>
     <string name="preferences_dub_enabled_title">Ativar dublagem</string>
     <string name="preferences_dub_enabled_summary">Lê a legenda na tela e fala em português com a voz do personagem</string>
+    <string name="preferences_dub_mode_title">Voz da dublagem</string>
+    <string name="preferences_dub_mode_local">Voz do Android (grátis, sem servidor)</string>
+    <string name="preferences_dub_mode_server">Servidor com voz clonada do personagem</string>
     <string name="preferences_dub_server_title">Endereço do servidor</string>
     <string name="preferences_dub_server_summary">Ex.: 192.168.0.10:8765 ou https://dublagem.exemplo.com</string>
     <string name="preferences_dub_token_title">Token de acesso</string>

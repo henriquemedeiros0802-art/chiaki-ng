@@ -2,6 +2,7 @@
 
 package com.metallic.chiaki.dub
 
+import android.content.Context
 import android.os.Build
 import android.os.SystemClock
 import android.view.SurfaceView
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
  */
 @RequiresApi(Build.VERSION_CODES.O)
 class DubController(
+	private val context: Context,
 	private val surfaceView: SurfaceView,
 	private val audioProvider: () -> SessionAudio?,
 	private val prefs: DubPreferences,
@@ -38,6 +40,8 @@ class DubController(
 	}
 
 	private var scope: CoroutineScope? = null
+	private var localSpeaker: LocalSpeaker? = null
+	@Volatile private var localActiveId = 0
 	private var client: DubClient? = null
 	private val playout = DubPlayout()
 	private var tracker = SubtitleTracker()
@@ -95,6 +99,11 @@ class DubController(
 	{
 		if(scope != null)
 			return
+		if(prefs.mode == DubPreferences.MODE_LOCAL)
+		{
+			startLocal()
+			return
+		}
 		if(prefs.serverUrl.isBlank())
 		{
 			onStatus("Dublagem: informe o endereço do servidor em Ajustes → Dublagem")
@@ -113,10 +122,32 @@ class DubController(
 		publishStatus()
 	}
 
+	/** Modo grátis: só lê a legenda na tela e fala com a voz do Android. */
+	private fun startLocal()
+	{
+		duckGain = prefs.duckGain
+		tracker = SubtitleTracker(confirmFrames = prefs.confirmFrames)
+		val s = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+		scope = s
+		localSpeaker = LocalSpeaker(
+			context,
+			onProblem = { msg -> lastError = msg; publishStatus() },
+			onFinished = { id ->
+				if(id == localActiveId)
+					audioProvider()?.setGains(1f, 1f)       // terminou de falar: devolve o volume do jogo
+			})
+		connected = true
+		publishStatus()
+		s.launch { visionLoop(null) }
+	}
+
 	fun stop()
 	{
 		scope?.cancel()
 		scope = null
+		localSpeaker?.shutdown()
+		localSpeaker = null
+		localActiveId = 0
 		client?.close()
 		client = null
 		val audio = audioProvider()
@@ -176,7 +207,7 @@ class DubController(
 
 	// ---------------- tela → legenda ----------------
 
-	private suspend fun visionLoop(c: DubClient)
+	private suspend fun visionLoop(c: DubClient?)
 	{
 		val grabber = FrameGrabber(surfaceView)
 		val ocr = OcrEngine()
@@ -231,7 +262,7 @@ class DubController(
 		}
 	}
 
-	private fun handle(events: List<SubtitleTracker.Event>, c: DubClient)
+	private fun handle(events: List<SubtitleTracker.Event>, c: DubClient?)
 	{
 		for(e in events)
 		{
@@ -240,16 +271,35 @@ class DubController(
 				is SubtitleTracker.Event.Start ->
 				{
 					val audio = audioProvider()
+					val local = localSpeaker
+					if(c == null && local != null)
+					{
+						localActiveId = e.id
+						lastText = e.text
+						audio?.setGains(duckGain, 1f)
+						local.speak(e.id, e.text)
+						publishStatus()
+						continue
+					}
 					playout.begin(e.id, outRate)
 					resampler = null
 					speaker = ""
 					lastText = e.text
 					audio?.setGains(duckGain, 1f)
-					c.sendSubtitle(e.id, e.text)
+					c?.sendSubtitle(e.id, e.text)
 					publishStatus()
 				}
 				is SubtitleTracker.Event.Stop ->
 				{
+					if(c == null)
+					{
+						localSpeaker?.stop()                      // legenda sumiu: corta a voz na hora
+						audioProvider()?.setGains(1f, 1f)
+						localActiveId = 0
+						lastText = ""
+						publishStatus()
+						continue
+					}
 					c.sendStop(e.id)
 					val audio = audioProvider()
 					playout.cancel { audio?.dubFlush() }      // fade-out de 80 ms e descarta o que sobrou
@@ -283,8 +333,9 @@ class DubController(
 
 	private fun publishStatus()
 	{
-		val sb = StringBuilder("Dublagem ")
-		sb.append(if(connected) "● online" else "○ conectando…")
+		val local = prefs.mode == DubPreferences.MODE_LOCAL
+		val sb = StringBuilder(if(local) "Dublagem (voz do Android) " else "Dublagem ")
+		sb.append(if(connected) (if(local) "● ativa" else "● online") else "○ conectando…")
 		if(speaker.isNotEmpty()) sb.append(" · ").append(speaker)
 		if(latencyMs > 0) sb.append(" · ").append(latencyMs).append(" ms")
 		if(lastText.isNotEmpty()) sb.append("\n").append(lastText.take(60))

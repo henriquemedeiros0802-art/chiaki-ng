@@ -17,7 +17,14 @@ PS5 ──Remote Play──► app (cliente Chiaki próprio)
 Como o app é o próprio cliente do Remote Play, ele recebe o vídeo e o áudio **já decodificados**, então não
 há captura de tela nem de áudio do sistema (que o app oficial bloqueia).
 
-## 1. Servidor
+## 0. Teste grátis (sem servidor, sem conta)
+
+Em **Ajustes → Dublagem de legendas → Voz da dublagem** deixe "Voz do Android" (é o padrão). O app lê a legenda
+e fala com a voz em português do próprio Android, e corta a fala quando a legenda some. Não identifica o
+personagem: é a mesma voz para todos. Precisa da voz em português instalada
+(Ajustes do Android → Idioma → Saída de texto para fala). Só o item 2 (App Android) abaixo é necessário.
+
+## 1. Servidor (voz clonada do personagem)
 
 ```bash
 cd dubbing-server

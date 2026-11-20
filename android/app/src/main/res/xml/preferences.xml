@@ -102,6 +102,13 @@
             app:title="@string/preferences_dub_enabled_title"
             app:summary="@string/preferences_dub_enabled_summary"
             app:defaultValue="false" />
+        <ListPreference
+            app:key="dub_mode"
+            app:title="@string/preferences_dub_mode_title"
+            app:summary="%s"
+            app:entries="@array/dub_mode_entries"
+            app:entryValues="@array/dub_mode_values"
+            app:defaultValue="local" />
         <EditTextPreference
             app:key="dub_server_url"
             app:title="@string/preferences_dub_server_title"

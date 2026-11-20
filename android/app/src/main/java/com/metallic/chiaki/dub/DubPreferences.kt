@@ -12,6 +12,7 @@ class DubPreferences(context: Context)
 	companion object
 	{
 		const val KEY_ENABLED = "dub_enabled"
+		const val KEY_MODE = "dub_mode"
 		const val KEY_SERVER_URL = "dub_server_url"
 		const val KEY_TOKEN = "dub_token"
 		const val KEY_GAME = "dub_game"
@@ -25,6 +26,9 @@ class DubPreferences(context: Context)
 		const val KEY_INTERVAL_MS = "dub_interval_ms"
 		const val KEY_SHOW_REGION = "dub_show_region"
 
+		const val MODE_LOCAL = "local"
+		const val MODE_SERVER = "server"
+
 		const val TEXT_MODE_WHITE = "white"
 		const val TEXT_MODE_ANY = "any"
 	}
@@ -34,6 +38,9 @@ class DubPreferences(context: Context)
 	var enabled: Boolean
 		get() = sp.getBoolean(KEY_ENABLED, false)
 		set(value) { sp.edit().putBoolean(KEY_ENABLED, value).apply() }
+
+	/** "local" = voz do Android (grátis, sem servidor); "server" = servidor com voz clonada. */
+	val mode: String get() = sp.getString(KEY_MODE, MODE_LOCAL) ?: MODE_LOCAL
 
 	val serverUrl: String get() = sp.getString(KEY_SERVER_URL, "")?.trim().orEmpty()
 	val token: String get() = sp.getString(KEY_TOKEN, "")?.trim().orEmpty()

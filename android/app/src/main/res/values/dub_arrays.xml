@@ -8,4 +8,12 @@
         <item>white</item>
         <item>any</item>
     </string-array>
+    <string-array name="dub_mode_entries">
+        <item>@string/preferences_dub_mode_local</item>
+        <item>@string/preferences_dub_mode_server</item>
+    </string-array>
+    <string-array name="dub_mode_values">
+        <item>local</item>
+        <item>server</item>
+    </string-array>
 </resources>
