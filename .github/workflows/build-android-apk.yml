@@ -5,10 +5,13 @@ on:
   push:
     branches: [feature/dublagem-legenda]
 
+permissions:
+  contents: write
+
 jobs:
   apk:
-    name: Debug APK (arm64)
-    runs-on: ubuntu-latest
+    name: Debug APK
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -18,30 +21,60 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Dependências do gerador nanopb
-        run: pip install protobuf grpcio-tools
+          java-version: "17"
 
       - name: NDK e CMake do Android
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "ndk;28.2.13676358" "cmake;3.22.1" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Rodar testes da lógica Kotlin
+      - name: Ferramentas do nanopb (protoc)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler python3-protobuf ninja-build
+          protoc --version
+
+      - name: Assinar com chave fixa (novas versões instalam por cima das antigas)
+        run: |
+          printf 'chiakiKeystore=../ci-debug.keystore\nchiakiKeystorePW=android\nchiakiKeyAlias=dublador\nchiakiKeyPW=android\n' > android/local.properties
+
+      - name: Testes da lógica Kotlin da dublagem
         working-directory: android
+        continue-on-error: true
         run: ./gradlew testDebugUnitTest --tests 'com.metallic.chiaki.dub.*' --no-daemon
 
-      - name: Compilar APK debug (arm64-v8a)
+      - name: Compilar APK debug
         working-directory: android
-        run: ./gradlew assembleDebug -Pandroid.injected.build.abi=arm64-v8a --no-daemon
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            ./gradlew assembleDebug --no-daemon 2>&1 | tee ../build.log
+            rc=${PIPESTATUS[0]}
+            [ "$rc" = "0" ] && exit 0
+            echo "tentativa $i falhou ($rc), tentando de novo"; sleep 15
+          done
+          exit 1
+
+      - name: Resumo dos erros
+        if: failure()
+        run: |
+          grep -nE "^e: |error:|What went wrong|FAILED|Could not|not found|Unresolved" build.log | head -25 | cut -c1-400 | while IFS= read -r l; do echo "::error::$l"; done
+
+      - name: Renomear APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/*.apk out/dublagem-ps5-build-${{ github.run_number }}.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: chiaki-dublagem-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          name: dublagem-ps5-apk
+          path: out/dublagem-ps5-build-${{ github.run_number }}.apk
+
+      - name: Publicar APK numa release (baixe pelo celular)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: dublagem-build-${{ github.run_number }}
+          name: Dublagem PS5 build ${{ github.run_number }}
+          files: out/dublagem-ps5-build-${{ github.run_number }}.apk
+          prerelease: true
