@@ -57,6 +57,36 @@
         android:layout_height="match_parent"
         android:fitsSystemWindows="true">
 
+        <LinearLayout
+            android:id="@+id/dubRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp"
+            android:background="@color/stream_overlay_background"
+            android:clickable="true"
+            android:focusable="false"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/dubSwitch"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/stream_dubbing"
+                android:textColor="@color/stream_text"
+                app:switchPadding="8dp" />
+
+            <Button
+                android:id="@+id/dubBandButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/stream_dubbing_band"
+                android:textColor="@color/stream_text" />
+        </LinearLayout>
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -88,27 +118,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:switchPadding="8dp" />
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/dubSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="400dp"
-                android:text="@string/stream_dubbing"
-                android:textColor="@color/stream_text"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:switchPadding="8dp" />
 
-            <Button
-                android:id="@+id/dubBandButton"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/stream_dubbing_band"
-                android:textColor="@color/stream_text"
-                app:layout_constraintBottom_toTopOf="@id/dubSwitch"
-                app:layout_constraintStart_toStartOf="@id/dubSwitch" />
 
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/displayModeToggle"
