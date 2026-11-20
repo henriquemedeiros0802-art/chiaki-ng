@@ -54,6 +54,9 @@ class DubController(
 	@Volatile private var latencyMs = 0
 	@Volatile private var lastText = ""
 	@Volatile private var lastError = ""
+	private val memory = LineMemory()
+	@Volatile private var fedLines: List<String> = emptyList()
+	@Volatile private var fedIsNew = false
 	@Volatile private var lastRead = "(procurando…)"
 
 	private val listener = object: DubClient.Listener
@@ -157,6 +160,7 @@ class DubController(
 		audio?.setGains(1f, 1f)
 		audio?.setTap(false)
 		tracker.reset()
+		memory.clear()
 		connected = false
 		onStatus("")
 	}
@@ -216,7 +220,7 @@ class DubController(
 		val analyzer = RegionAnalyzer()
 		var pixels = IntArray(0)
 		var previousFingerprint: IntArray? = null
-		var cachedText = ""
+		var cachedLines: List<String> = emptyList()
 		try
 		{
 			while(scope?.isActive == true)
@@ -232,28 +236,35 @@ class DubController(
 					bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
 					val analysis = analyzer.analyze(pixels, w, h)
 
-					val text = when
+					val lines: List<String> = when
 					{
 						// sem texto claro no recorte: a legenda sumiu, sem gastar OCR
 						prefs.textMode == DubPreferences.TEXT_MODE_WHITE && !analysis.whiteTextLikely ->
 						{
 							previousFingerprint = null
-							cachedText = ""
-							""
+							cachedLines = emptyList()
+							emptyList()
 						}
 						// recorte praticamente igual ao anterior: reaproveita a leitura
-						previousFingerprint != null && analyzer.difference(previousFingerprint, analysis.fingerprint) < UNCHANGED_THRESHOLD -> cachedText
+						previousFingerprint != null && analyzer.difference(previousFingerprint, analysis.fingerprint) < UNCHANGED_THRESHOLD -> cachedLines
 						else ->
 						{
-							val read = ocr.recognize(bitmap)
+							val read = ocr.recognizeLines(bitmap)
 							previousFingerprint = analysis.fingerprint
-							cachedText = read
+							cachedLines = read
 							read
 						}
 					}
+					val now = SystemClock.elapsedRealtime()
+					val selection = memory.select(lines, tracker.activeSubtitleId, now)
+					val text = selection.lines.joinToString(" ")
+					fedLines = selection.lines
+					fedIsNew = selection.hasNew
+					val rawText = lines.joinToString(" ")
 					lastRead = when
 					{
 						text.isNotBlank() -> text
+						rawText.isNotBlank() -> "(texto fixo já lido: " + rawText.take(40) + ")"
 						analysis.whiteTextLikely -> "(área com imagem, mas sem texto legível)"
 						else -> "(área escura/sem texto)"
 					}
@@ -280,6 +291,7 @@ class DubController(
 			{
 				is SubtitleTracker.Event.Start ->
 				{
+					memory.markSpoken(fedLines, e.id, SystemClock.elapsedRealtime())
 					val audio = audioProvider()
 					val local = localSpeaker
 					if(c == null && local != null)

@@ -20,5 +20,15 @@ class OcrEngine
 			.addOnFailureListener { if(cont.isActive) cont.resume("") }
 	}
 
+	/** Uma string por linha de texto, de cima para baixo. */
+	suspend fun recognizeLines(bitmap: Bitmap): List<String> = suspendCancellableCoroutine { cont ->
+		recognizer.process(InputImage.fromBitmap(bitmap, 0))
+			.addOnSuccessListener { r ->
+				if(cont.isActive)
+					cont.resume(r.textBlocks.flatMap { b -> b.lines.map { it.text.trim() } }.filter { it.isNotEmpty() })
+			}
+			.addOnFailureListener { if(cont.isActive) cont.resume(emptyList()) }
+	}
+
 	fun close() = recognizer.close()
 }
