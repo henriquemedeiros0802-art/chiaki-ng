@@ -34,7 +34,7 @@ class DubController(
 {
 	companion object
 	{
-		private const val OCR_MAX_WIDTH = 1600
+		private const val OCR_MAX_WIDTH = 2000
 		private const val UNCHANGED_THRESHOLD = 3f          // diferença média de brilho (0..255) para reaproveitar o OCR
 		private const val SEND_CHUNK_SAMPLES = 1600           // 100 ms a 16 kHz
 	}

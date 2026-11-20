@@ -29,8 +29,9 @@ class FrameGrabber(private val view: SurfaceView)
 	/** [region] em frações da imagem. Devolve um bitmap reutilizado (não guarde a referência). */
 	suspend fun grab(region: RectF, maxWidth: Int): Bitmap?
 	{
-		val w = view.width
-		val h = view.height
+		val frame = view.holder.surfaceFrame
+		val w = frame.width()
+		val h = frame.height()
 		if(w <= 0 || h <= 0 || !view.holder.surface.isValid)
 			return null
 		val src = Rect(
@@ -39,7 +40,7 @@ class FrameGrabber(private val view: SurfaceView)
 		if(src.width() < 8 || src.height() < 8)
 			return null
 		// legendas são pequenas: amplia até 2x para o OCR enxergar melhor
-		val dw = minOf(src.width() * 2, maxWidth)
+		val dw = minOf(src.width() * 3, maxWidth)
 		val dh = maxOf(8, src.height() * dw / src.width())
 		var b = bitmap
 		if(b == null || b.width != dw || b.height != dh)

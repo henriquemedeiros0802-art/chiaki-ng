@@ -442,6 +442,8 @@ class StreamActivity : AppCompatActivity()
 	{
 		val videoProfile = viewModel.session.connectInfo.videoProfile
 		binding.aspectRatioLayout.aspectRatio = videoProfile.width.toFloat() / videoProfile.height.toFloat()
+		// buffer da superfície no tamanho real do vídeo: a legenda fica nítida para o OCR
+		binding.surfaceView.holder.setFixedSize(videoProfile.width, videoProfile.height)
 		binding.aspectRatioLayout.mode = TransformMode.fromButton(binding.displayModeToggle.checkedButtonId)
 	}
 
